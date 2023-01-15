@@ -22,11 +22,11 @@
     ],
 
     "require": {
-        "nikic/php-parser":              "~1@dev",
         "symfony/console":               "~2.5",
         "symfony/dependency-injection":  "~2.5",
         "symfony/config":                "~2.5",
         "symfony/yaml":                  "~2.5",
-        "symfony/event-dispatcher":      "~2.5"
+        "symfony/event-dispatcher":      "~2.5",
+        "nikic/php-parser": "5.0.x-dev"
     }
 }
