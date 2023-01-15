@@ -14,6 +14,7 @@ use Naneau\Obfuscator\Obfuscator\Event\FileError as FileErrorEvent;
 use PhpParser\NodeTraverserInterface as NodeTraverser;
 
 use PhpParser\Parser;
+use PhpParser\ParserFactory;
 use PhpParser\Lexer;
 use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
 
@@ -106,6 +107,10 @@ class Obfuscator
      */
     public function getParser()
     {
+        if ($this->parser) {
+            $this->parser = (new ParserFactory())->createForNewestSupportedVersion();
+        }
+
         return $this->parser;
     }
 
