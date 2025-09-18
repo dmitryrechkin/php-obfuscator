@@ -22,11 +22,12 @@
     ],
 
     "require": {
-        "symfony/console":               "~2.5",
-        "symfony/dependency-injection":  "~2.5",
-        "symfony/config":                "~2.5",
-        "symfony/yaml":                  "~2.5",
-        "symfony/event-dispatcher":      "~2.5",
-        "nikic/php-parser": "5.0.x-dev"
+        "php": ">=7.4",
+        "symfony/console":               "^4.4",
+        "symfony/dependency-injection":  "^4.4",
+        "symfony/config":                "^4.4",
+        "symfony/yaml":                  "^4.4",
+        "symfony/event-dispatcher":      "^4.4",
+        "nikic/php-parser": "^5.0"
     }
 }
