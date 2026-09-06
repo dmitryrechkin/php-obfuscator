@@ -23,6 +23,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Modifiers;
+use PhpParser\Node\Name;
 
 /**
  * ScramblePrivateMethod
@@ -75,11 +76,23 @@ class ScramblePrivateMethod extends ScramblerVisitor
             return;
         }
 
-        // Scramble calls
+        // Scramble calls -- but only when the receiver is unambiguously the
+        // class itself. A private method can only be invoked on $this, self::
+        // or static:: from inside the declaring class, so those are the only
+        // call shapes that can target the method we renamed. A call on any
+        // other receiver ($this->other->name(), $foo->name(), Bar::name())
+        // reaches a DIFFERENT object -- whose same-named method may be public
+        // contract -- and renaming it would break the call. The obfuscator has
+        // no type information, so the syntactic receiver is the only safe
+        // signal: when it is not $this / self / static, leave the call alone.
         if ($node instanceof MethodCall || $node instanceof StaticCall) {
 
             // Node wasn't renamed
             if (!$this->isRenamed($node->name)) {
+                return;
+            }
+
+            if (!$this->receiverIsSameClass($node)) {
                 return;
             }
 
@@ -121,6 +134,29 @@ class ScramblePrivateMethod extends ScramblerVisitor
      * @param  Node[] $nodes
      * @return void
      **/
+
+    /**
+     * Whether a call's receiver is unambiguously the declaring class, i.e. the
+     * only shapes through which a private method can be reached: $this->m(),
+     * self::m(), static::m(). Anything else targets a different object and must
+     * not be renamed.
+     *
+     * @param  MethodCall|StaticCall $node
+     * @return bool
+     **/
+    private function receiverIsSameClass(Node $node): bool
+    {
+        if ($node instanceof MethodCall) {
+            return $node->var instanceof Variable && $node->var->name === 'this';
+        }
+
+        if ($node instanceof StaticCall && $node->class instanceof Name) {
+            return in_array($node->class->toLowerString(), ['self', 'static'], true);
+        }
+
+        return false;
+    }
+
     private function scanMethodDefinitions(array $nodes)
     {
         foreach ($nodes as $node) {
