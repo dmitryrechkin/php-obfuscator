@@ -23,6 +23,7 @@ use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Expr\PropertyFetch;
 
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Modifiers;
 
 /**
  * ScramblePrivateProperty
@@ -99,7 +100,7 @@ class ScramblePrivateProperty extends ScramblerVisitor
     {
         foreach ($nodes as $node) {
             // Scramble the private method definitions
-            if ($node instanceof Property && ($node->type & ClassNode::MODIFIER_PRIVATE)) {
+            if ($node instanceof Property && ($node->flags & Modifiers::PRIVATE)) {
                 foreach($node->props as $property) {
 
                     // Record original name and scramble it

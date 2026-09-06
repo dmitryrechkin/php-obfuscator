@@ -69,15 +69,15 @@ services:
     obfuscator.node_visitor.name_resolver:
         class: PhpParser\NodeVisitor\NameResolver
 
-    # Parser
-    obfuscator.parser:
-        class: PhpParser\Parser\Php7
-        arguments:
-            - "@obfuscator.lexer"
+    # Parser (php-parser 5.x): the factory builds a parser for the newest
+    # supported PHP version and wires its own lexer. Shipped source targets
+    # PHP 7.4+, and this parses the whole 7.4-8.x range.
+    obfuscator.parser_factory:
+        class: PhpParser\ParserFactory
 
-    # Lexer
-    obfuscator.lexer:
-        class: PhpParser\Lexer
+    obfuscator.parser:
+        class: PhpParser\Parser
+        factory: ["@obfuscator.parser_factory", createForNewestSupportedVersion]
 
     # Pretty printer
     obfuscator.pretty_printer:

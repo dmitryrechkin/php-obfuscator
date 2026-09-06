@@ -58,8 +58,11 @@ class ScrambleVariable extends ScramblerVisitor
      **/
     public function enterNode(Node $node)
     {
-        // Function param or variable use
-        if ($node instanceof Param || $node instanceof StaticVar || $node instanceof Variable) {
+        // Variable use. In php-parser 5 a function parameter's name lives on
+        // an inner Variable node ($param->var), which the traverser visits on
+        // its own -- so a Param needs no special handling here, and handling it
+        // would scramble the same name twice into an inconsistent result.
+        if ($node instanceof StaticVar || $node instanceof Variable) {
             return $this->scramble($node);
         }
 
