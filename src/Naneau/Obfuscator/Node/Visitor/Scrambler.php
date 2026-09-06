@@ -12,6 +12,7 @@ use Naneau\Obfuscator\StringScrambler;
 
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\Node;
+use PhpParser\Node\Identifier;
 
 use \InvalidArgumentException;
 
@@ -60,8 +61,22 @@ abstract class Scrambler extends NodeVisitorAbstract
      **/
     protected function scramble(Node $node, $var = 'name')
     {
-        // String/value to scramble
-        $toScramble = $node->$var;
+        // String/value to scramble. In php-parser 5 an identifier is an
+        // Identifier/VarLikeIdentifier object rather than a raw string; both
+        // stringify to the name, so read through __toString and write back in
+        // the same shape. A dynamic name -- $this->{$expr}(), $$var -- is a
+        // Variable or other Expr node with no scalar name; it cannot be known
+        // at build time, so it is left untouched (the original 4.x code relied
+        // on is_string() for this, which no longer holds in 5.x).
+        $raw = $node->$var;
+        if (is_object($raw)) {
+            if (!($raw instanceof Identifier)) {
+                return;
+            }
+            $toScramble = (string) $raw;
+        } else {
+            $toScramble = $raw;
+        }
 
         // We ignore to scramble if it's not string (ex: a variable variable name)
         if (!is_string($toScramble)) {
@@ -82,7 +97,14 @@ abstract class Scrambler extends NodeVisitorAbstract
         }
 
         // Prefix with 'p' so we dont' start with an number
-        $node->$var = $this->scrambleString($toScramble);
+        $scrambled = $this->scrambleString($toScramble);
+        if (is_object($raw)) {
+            // Preserve the identifier node type (Identifier vs VarLikeIdentifier).
+            $identifierClass = get_class($raw);
+            $node->$var = new $identifierClass($scrambled);
+        } else {
+            $node->$var = $scrambled;
+        }
 
         // Return the node
         return $node;

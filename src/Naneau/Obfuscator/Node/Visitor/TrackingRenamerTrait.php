@@ -35,7 +35,8 @@ trait TrackingRenamerTrait
      **/
     protected function renamed($method, $newName)
     {
-        $this->renamed[$method] = $newName;
+        // php-parser 5 passes Identifier objects; key the map by the name.
+        $this->renamed[(string) $method] = (string) $newName;
 
         return $this;
     }
@@ -52,8 +53,13 @@ trait TrackingRenamerTrait
             return false;
         }
 
-        // Ignore variable functions
-        if (!is_string($method)) {
+        // php-parser 5 passes Identifier objects here; a Variable-typed
+        // method name (variable method call) has no scalar name and is skipped.
+        if (is_object($method) && !method_exists($method, '__toString')) {
+            return false;
+        }
+        $method = (string) $method;
+        if ($method === '') {
             return false;
         }
 
@@ -71,7 +77,7 @@ trait TrackingRenamerTrait
         if (!$this->isRenamed($method)) {
             throw new InvalidArgumentException(sprintf(
                 '"%s" was not renamed',
-                $method
+                (string) $method
             ));
         }
 

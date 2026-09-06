@@ -22,6 +22,7 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Modifiers;
 
 /**
  * ScramblePrivateMethod
@@ -124,7 +125,7 @@ class ScramblePrivateMethod extends ScramblerVisitor
     {
         foreach ($nodes as $node) {
             // Scramble the private method definitions
-            if ($node instanceof ClassMethod && ($node->type & ClassNode::MODIFIER_PRIVATE)) {
+            if ($node instanceof ClassMethod && ($node->flags & Modifiers::PRIVATE)) {
 
                 // Record original name and scramble it
                 $originalName = $node->name;
