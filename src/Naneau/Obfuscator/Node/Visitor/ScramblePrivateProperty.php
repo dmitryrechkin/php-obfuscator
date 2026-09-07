@@ -25,6 +25,7 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Modifiers;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Stmt\Trait_ as TraitNode;
 
 /**
  * ScramblePrivateProperty
@@ -121,6 +122,15 @@ class ScramblePrivateProperty extends ScramblerVisitor
                     $this->renamed($originalName, $property->name);
                 }
 
+            }
+
+            // Do NOT descend into a trait. A private member declared in a
+            // trait is reached from the USING class (a different file) as
+            // $this->member; per-file obfuscation cannot rewrite that call, so
+            // renaming the trait's declaration would leave a dangling call.
+            // Traits are therefore left readable -- correctness over coverage.
+            if ($node instanceof TraitNode) {
+                continue;
             }
 
             // Recurse over child nodes
