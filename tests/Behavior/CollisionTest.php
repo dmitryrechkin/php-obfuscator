@@ -50,6 +50,33 @@ final class CollisionTest extends TestCase
         ];
     }
 
+    /**
+     * A private method declared in a trait is called from the using class in a
+     * different file. Per-file obfuscation cannot rewrite that cross-file call,
+     * so the trait's private members must be left readable rather than renamed
+     * into a dangling call.
+     */
+    public function testTraitPrivateMethodCalledFromUsingClassSurvives(): void
+    {
+        $work = sys_get_temp_dir() . '/obf-trait-' . bin2hex(random_bytes(4));
+        mkdir($work . '/src', 0777, true);
+        copy(__DIR__ . '/../Fixtures/TraitHelper.php', $work . '/src/TraitHelper.php');
+        copy(__DIR__ . '/../Fixtures/TraitUser.php', $work . '/src/TraitUser.php');
+
+        (new Process([
+            PHP_BINARY, __DIR__ . '/../../bin/obfuscate', 'obfuscate',
+            $work . '/src', $work . '/out',
+            '--config=' . __DIR__ . '/config/private-only.yml',
+        ]))->mustRun();
+
+        $out = new Process([PHP_BINARY, __DIR__ . '/drivers/TraitUser.driver.php', $work . '/out/TraitUser.php']);
+        $out->mustRun();
+
+        self::assertSame('50', trim($out->getOutput()));
+
+        $this->rmdir($work);
+    }
+
     private function rmdir(string $dir): void
     {
         $it = new \RecursiveIteratorIterator(
