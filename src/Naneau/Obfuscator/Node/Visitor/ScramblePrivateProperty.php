@@ -24,6 +24,7 @@ use PhpParser\Node\Expr\PropertyFetch;
 
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Modifiers;
+use PhpParser\Node\Identifier;
 
 /**
  * ScramblePrivateProperty
@@ -78,13 +79,22 @@ class ScramblePrivateProperty extends ScramblerVisitor
     public function enterNode(Node $node)
     {
         if ($node instanceof PropertyFetch) {
-
-            if (!is_string($node->name)) {
+            // A private property is only ever accessed as $this->prop from
+            // inside the declaring class; $this->other->prop reaches a
+            // different object whose same-named property may be public, so it
+            // must not be renamed. (In php-parser 5 the name is an Identifier,
+            // not a string -- the old is_string() guard silently skipped every
+            // fetch.)
+            if (!($node->var instanceof Variable) || $node->var->name !== 'this') {
                 return;
             }
 
-            if ($this->isRenamed($node->name)) {
-                $node->name = $this->getNewName($node->name);
+            if (!($node->name instanceof Identifier)) {
+                return;
+            }
+
+            if ($this->isRenamed((string) $node->name)) {
+                $node->name = new Identifier($this->getNewName((string) $node->name));
                 return $node;
             }
         }
