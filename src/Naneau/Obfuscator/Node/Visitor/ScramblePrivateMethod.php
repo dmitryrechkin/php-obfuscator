@@ -49,6 +49,23 @@ class ScramblePrivateMethod extends ScramblerVisitor
     use SkipTrait;
 
     /**
+     * Lower-cased names of private methods that must NOT be renamed because the
+     * file invokes a method of that name on a bare local variable other than
+     * $this ($clone->m(), $other->m()) or via parent::. PHP visibility is
+     * class-level, not instance-level, so $other->m() where $other is a SIBLING
+     * instance of the declaring class legally reaches its private m() -- yet the
+     * receiver rule in enterNode() leaves that call readable. Renaming only the
+     * declaration would then fatal at runtime with "Call to undefined method
+     * C::sp...()" (the AbilityDefinition::withLogger() clone-and-rebuild break
+     * that took a live store down). Having no type information, we cannot prove
+     * the variable is-a the declaring class, so such names are kept readable:
+     * correctness over coverage, exactly as with trait-declared members.
+     *
+     * @var array<string,bool>
+     **/
+    private $unsafeNames = [];
+
+    /**
      * Before node traversal
      *
      * @param  Node[] $nodes
@@ -59,6 +76,9 @@ class ScramblePrivateMethod extends ScramblerVisitor
         $this
             ->resetRenamed()
             ->skip($this->variableMethodCallsUsed($nodes));
+
+        $this->unsafeNames = [];
+        $this->collectUnsafeNames($nodes);
 
         $this->scanMethodDefinitions($nodes);
 
@@ -145,6 +165,56 @@ class ScramblePrivateMethod extends ScramblerVisitor
      * @param  MethodCall|StaticCall $node
      * @return bool
      **/
+    /**
+     * Recursively record the lower-cased names of methods invoked on a bare
+     * local variable other than $this ($clone->m(), $other->m()) or via
+     * parent::. These are the shapes through which a sibling instance of the
+     * SAME class can reach a private method; the syntactic receiver rule cannot
+     * tell them from a collaborator call, so the matching private declaration is
+     * left readable (see $unsafeNames) rather than renamed into a dangling call.
+     *
+     * A $this->prop->m() collaborator call is deliberately NOT collected: its
+     * receiver is a property, which the receiver rule already leaves alone, and
+     * the same-named private declaration stays safely scrambleable.
+     *
+     * @param  Node[] $nodes
+     * @return void
+     **/
+    private function collectUnsafeNames(array $nodes): void
+    {
+        foreach ($nodes as $node) {
+            if ($node instanceof MethodCall
+                && $node->name instanceof Node\Identifier
+                && $node->var instanceof Variable
+                && $node->var->name !== 'this'
+            ) {
+                $this->unsafeNames[strtolower($node->name->toString())] = true;
+            }
+
+            if ($node instanceof StaticCall
+                && $node->name instanceof Node\Identifier
+                && $node->class instanceof Name
+                && $node->class->toLowerString() === 'parent'
+            ) {
+                $this->unsafeNames[strtolower($node->name->toString())] = true;
+            }
+
+            foreach ($node->getSubNodeNames() as $subName) {
+                $child = $node->$subName ?? null;
+                if ($child instanceof Node) {
+                    $this->collectUnsafeNames([$child]);
+                } elseif (is_array($child)) {
+                    $this->collectUnsafeNames(array_filter(
+                        $child,
+                        static function ($candidate) {
+                            return $candidate instanceof Node;
+                        }
+                    ));
+                }
+            }
+        }
+    }
+
     private function receiverIsSameClass(Node $node): bool
     {
         if ($node instanceof MethodCall) {
@@ -163,6 +233,16 @@ class ScramblePrivateMethod extends ScramblerVisitor
         foreach ($nodes as $node) {
             // Scramble the private method definitions
             if ($node instanceof ClassMethod && ($node->flags & Modifiers::PRIVATE)) {
+
+                // Leave readable any private method reached through a sibling
+                // instance of the same class -- renaming only the declaration
+                // would dangle the un-renamed $other->m() call site.
+                if (isset($this->unsafeNames[strtolower((string) $node->name)])) {
+                    if (isset($node->stmts) && is_array($node->stmts)) {
+                        $this->scanMethodDefinitions($node->stmts);
+                    }
+                    continue;
+                }
 
                 // Record original name and scramble it
                 $originalName = $node->name;
