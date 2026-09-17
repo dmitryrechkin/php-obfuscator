@@ -7,6 +7,11 @@ parameters:
         - wp_query
         - wpdb
         - wp_the_query
+
+# MUST be a `services:` override. Under `parameters:` the whole block is an
+# inert parameter, the base traverser (variable + private-method only) runs,
+# and every property assertion in this suite passes against UNscrambled code.
+services:
     obfuscator.node_traverser:
         class: PhpParser\NodeTraverser
         calls:

@@ -48,6 +48,7 @@ final class CollisionTest extends TestCase
             'private method colliding with a public interface method' => ['Packing.php', 'A,B'],
             'private property colliding with a public property' => ['Props.php', '3:7'],
             'private method reached through a sibling instance of the same class' => ['Sibling.php', 'run:AB'],
+            'private static property fetched via self:: and static::' => ['StaticProps.php', 'unset:set:2'],
         ];
     }
 
