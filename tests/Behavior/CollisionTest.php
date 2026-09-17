@@ -49,6 +49,7 @@ final class CollisionTest extends TestCase
             'private property colliding with a public property' => ['Props.php', '3:7'],
             'private method reached through a sibling instance of the same class' => ['Sibling.php', 'run:AB'],
             'private static property fetched via self:: and static::' => ['StaticProps.php', 'unset:set:2'],
+            'private method reached only through a string callable' => ['StringCallable.php', 'pa,pb:has'],
         ];
     }
 
