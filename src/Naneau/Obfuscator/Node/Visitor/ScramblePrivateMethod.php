@@ -199,6 +199,13 @@ class ScramblePrivateMethod extends ScramblerVisitor
                 $this->unsafeNames[strtolower($node->name->toString())] = true;
             }
 
+            // A string literal equal to a member name is a callable / reflection
+            // reference the renamer cannot follow: [$this, 'formatItem'],
+            // method_exists($this, 'x'), call_user_func(...). Keep such names.
+            if ($node instanceof Node\Scalar\String_) {
+                $this->unsafeNames[strtolower($node->value)] = true;
+            }
+
             foreach ($node->getSubNodeNames() as $subName) {
                 $child = $node->$subName ?? null;
                 if ($child instanceof Node) {

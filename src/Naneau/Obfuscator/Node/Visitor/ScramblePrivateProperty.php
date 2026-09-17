@@ -166,6 +166,12 @@ class ScramblePrivateProperty extends ScramblerVisitor
                 $this->unsafeNames[$node->name->toString()] = true;
             }
 
+            // A string literal equal to a property name may be a dynamic
+            // $this->{$name} / property_exists() reference: keep it readable.
+            if ($node instanceof Node\Scalar\String_) {
+                $this->unsafeNames[$node->value] = true;
+            }
+
             foreach ($node->getSubNodeNames() as $subName) {
                 $child = $node->$subName ?? null;
                 if ($child instanceof Node) {
