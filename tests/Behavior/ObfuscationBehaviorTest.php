@@ -75,9 +75,13 @@ final class ObfuscationBehaviorTest extends TestCase
         $process = $this->obfuscateProcess($this->workDir . '/src', $this->workDir . '/out');
         $process->run();
 
-        self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
-        self::assertStringNotContainsStringIgnoringCase('warning', $process->getErrorOutput());
-        self::assertStringNotContainsStringIgnoringCase('deprecated', $process->getErrorOutput());
+        // CLI PHP prints diagnostics to STDOUT by default, so check both streams.
+        $output = $process->getOutput() . $process->getErrorOutput();
+        self::assertSame(0, $process->getExitCode(), $output);
+        // PHP 7.4 reports an undefined property as a Notice, 8.x as a Warning.
+        foreach (['warning', 'notice', 'deprecated'] as $diagnostic) {
+            self::assertStringNotContainsStringIgnoringCase($diagnostic, $output);
+        }
     }
 
     private function obfuscate(string $in, string $out): void

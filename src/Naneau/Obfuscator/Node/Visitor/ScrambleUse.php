@@ -24,7 +24,6 @@ use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_ as ClassStatement;
 use PhpParser\Node\Stmt\Use_ as UseStatement;
 use PhpParser\Node\Stmt\UseUse as UseUseStatement;
-use PhpParser\Node\Stmt\StaticVar;
 
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\StaticCall;
@@ -134,7 +133,6 @@ class ScrambleUse extends ScramblerVisitor
             $node instanceof ClassConstFetch
             || $node instanceof StaticCall
             || $node instanceof StaticPropertyFetch
-            || $node instanceof StaticVar
             || $node instanceof NewExpression
             || $node instanceof InstanceOfExpression
         ) {
