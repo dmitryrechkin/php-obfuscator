@@ -98,6 +98,13 @@ final class Complex extends Base
         $this->log[] = $line;
     }
 
+    // Function-local static: must keep its value across calls once renamed.
+    public function nextTicket(): int
+    {
+        static $ticket = 0;
+        return ++$ticket;
+    }
+
     public function history(): array
     {
         return $this->log;

@@ -16,7 +16,6 @@ use PhpParser\NodeVisitorAbstract;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Param;
-use PhpParser\Node\Stmt\StaticVar;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Catch_ as CatchStatement;
 use PhpParser\Node\Expr\ClosureUse;
@@ -58,11 +57,11 @@ class ScrambleVariable extends ScramblerVisitor
      **/
     public function enterNode(Node $node)
     {
-        // Variable use. In php-parser 5 a function parameter's name lives on
-        // an inner Variable node ($param->var), which the traverser visits on
-        // its own -- so a Param needs no special handling here, and handling it
-        // would scramble the same name twice into an inconsistent result.
-        if ($node instanceof StaticVar || $node instanceof Variable) {
+        // Variable use. In php-parser 5 a function parameter's name and a
+        // `static $x` name both live on an inner Variable node ($node->var),
+        // which the traverser visits on its own -- so Param and StaticVar need
+        // no handling here (StaticVar has no ->name; reading it warned).
+        if ($node instanceof Variable) {
             return $this->scramble($node);
         }
 

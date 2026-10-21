@@ -14,5 +14,6 @@ $out[] = $c->call('missing');
 $adder = $c->makeAdder(10);
 $out[] = (string) $adder(5);                     // closure capturing $this + local
 $out[] = implode(',', $c->history());
+$out[] = $c->nextTicket() . ',' . $c->nextTicket(); // function-local static
 $out[] = Complex::PREFIX;                         // public class const
 echo implode("\n", $out), "\n";
